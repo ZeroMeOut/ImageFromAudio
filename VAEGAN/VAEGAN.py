@@ -31,35 +31,28 @@ class Discriminator(nn.Module):
         return self.main(x)
 
 class Generator(nn.Module):
-    def __init__(self, channels_img, features_g):
+    def __init__(self, channels_img):
         super(Generator, self).__init__()
         # DownLayers
         self.down = nn.Sequential(
-            nn.Conv2d(channels_img, features_g, 2, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            self._downsample(features_g, features_g * 2, 2, 2, 1),
-            self._downsample(features_g * 2, features_g * 4, 2, 2, 1),
-            nn.Conv2d(features_g * 4, features_g * 8, 4, 2, 0, bias=False),
-        )
-        
-        self.img_2hid = nn.Linear(features_g * 8, features_g * 4)
-        self.hid_2mu = nn.Linear(features_g * 4, 10)
-        self.hid_2sigma = nn.Linear(features_g * 4, 10)
-        self.z_2hid = nn.Linear(10, features_g * 4)
-        self.hid_2img = nn.Linear(features_g * 4, features_g * 8)
+            self._downsample(channels_img, 128, 4, 2),
+            self._downsample(128, 256, 4, 2),
+            self._downsample(256, 512, 4, 2),
+        ) 
+
+        self.sigma_mu =  nn.Conv2d(512, 64, 4, 2, bias=False)
 
         # UpLayers
         self.up = nn.Sequential(
-            nn.ConvTranspose2d(features_g * 8, features_g * 4, 4, 2, 0, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            self._upsample(features_g * 4, features_g * 2, 2, 2, 1),
-            self._upsample(features_g * 2, features_g, 2, 2, 1),
-            nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it  to bring out 28x28 image)
+            self._upsample(64, 512, 3, 2),
+            self._upsample(512, 256, 3, 2),
+            self._upsample(256, 128, 2, 2),
+            self._upsample(128, 1, 2, 2),
         )
 
         self.relu = nn.ReLU()
 
-    def _downsample(self, in_channels, out_channels, kernel_size, stride, padding):
+    def _downsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
         return nn.Sequential(
             nn.Conv2d(
                 in_channels,
@@ -70,10 +63,10 @@ class Generator(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),  
+            nn.LeakyReLU(0.2),  
         )
     
-    def _upsample(self, in_channels, out_channels, kernel_size, stride, padding):
+    def _upsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
         return nn.Sequential(
             nn.ConvTranspose2d(
                 in_channels,
@@ -90,18 +83,12 @@ class Generator(nn.Module):
     def forward(self, x):
         h = self.down(x)
 
-        h = h.view(h.shape[0], -1)
-        h = self.img_2hid(h)
-        mu, sigma = self.hid_2mu(h), self.hid_2sigma(h)
+        mu, sigma = self.sigma_mu(h), self.sigma_mu(h)
         ep = torch.rand_like(sigma)
         z = sigma + mu * ep
-        z = self.z_2hid(z)
-        z = self.hid_2img(z)
 
-        z_unsqueeze = z.view(z.shape[0], z.shape[1], 1, 1)
-
-        img = self.up(z_unsqueeze)
-        return img
+        img = self.up(z)
+        return img, mu, sigma
 
 def initialize_weights(model):
     for m in model.modules():
@@ -110,10 +97,10 @@ def initialize_weights(model):
 
 # Ahaha testing
 # def test():
-#     gen = Generator(1, 64)
+#     gen = Generator(1)
 #     disc = Discriminator(1, 64)
-#     x = torch.randn(32, 1, 28, 28)
-#     print("gen output shape: ", gen(x).shape)
+    # x = torch.randn(32, 1, 48, 48)
+    # print("gen output shape: ", gen(x).shape)
 #     print("disc output shape: ", disc(gen(x)).shape)
 
 # if __name__ == "__main__":
