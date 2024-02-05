@@ -2,14 +2,13 @@ import torch
 import torch.nn as nn
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d):
+    def __init__(self, channels_img):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(channels_img, features_d, 2, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            self._block(features_d, features_d * 2, 2, 2, 1),
-            self._block(features_d * 2, features_d * 4, 2, 2, 1),
-            nn.Conv2d(features_d * 4, features_d * 8, 4, 2, 0, bias=False),
+            self._block(channels_img, 128, 4, 2, 1),
+            self._block(128, 256, 4, 2, 1),
+            self._block(256, 512, 4, 2, 1),
+            self._block(512, 1, 1, 1, 1),
             nn.Sigmoid()
         )
 
@@ -40,7 +39,7 @@ class Generator(nn.Module):
             self._downsample(256, 512, 4, 2),
         ) 
 
-        self.sigma_mu =  nn.Conv2d(512, 64, 4, 2, bias=False)
+        self.logvar_mu =  nn.Conv2d(512, 64, 4, 2, bias=False)
 
         # UpLayers
         self.up = nn.Sequential(
@@ -48,6 +47,7 @@ class Generator(nn.Module):
             self._upsample(512, 256, 3, 2),
             self._upsample(256, 128, 2, 2),
             self._upsample(128, 1, 2, 2),
+            nn.Sigmoid()
         )
 
         self.relu = nn.ReLU()
@@ -83,12 +83,12 @@ class Generator(nn.Module):
     def forward(self, x):
         h = self.down(x)
 
-        mu, sigma = self.sigma_mu(h), self.sigma_mu(h)
-        ep = torch.rand_like(sigma)
-        z = sigma + mu * ep
+        mu, logvar = self.logvar_mu(h), self.logvar_mu(h)
+        ep = torch.rand_like(logvar)
+        z = logvar + mu * ep
 
         img = self.up(z)
-        return img, mu, sigma
+        return img, mu, logvar
 
 def initialize_weights(model):
     for m in model.modules():
