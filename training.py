@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from torch.utils.tensorboard import SummaryWriter
-from VAEGAN.VAEGAN import Discriminator, Generator, initialize_weights
+from VAEGAN.VAEGAN import Discriminator, Generator, initialize_weights, loss_fn
 from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -14,7 +14,7 @@ LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
 BATCH_SIZE = 128
 IMAGE_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 10
+NUM_EPOCHS = 100
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
@@ -51,13 +51,13 @@ for epoch in range(NUM_EPOCHS):
     for batch_idx, batch in enumerate(loader):
         mnist = batch['image1'].to(device)
         audio = batch['image2'].to(device)
-        fake = gen(audio)
+        fake, mu, logvar = gen(audio)
 
         disc_mnist = disc(mnist).reshape(-1).to(device)
         loss_disc_mnist = criterion(disc_mnist, torch.ones_like(disc_mnist).to(device))
 
         disc_fake = disc(fake.detach()).reshape(-1)
-        loss_disc_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
+        loss_disc_fake = criterion(disc_fake, torch.zeros_like(disc_fake).to(device))
         loss_disc = (loss_disc_mnist + loss_disc_fake) / 2
         disc.zero_grad()
         loss_disc.backward()
@@ -65,7 +65,7 @@ for epoch in range(NUM_EPOCHS):
 
         ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
         output = disc(fake).reshape(-1)
-        loss_gen = criterion(output, torch.ones_like(output))
+        loss_gen, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
         gen.zero_grad()
         loss_gen.backward()
         opt_gen.step()
@@ -78,7 +78,7 @@ for epoch in range(NUM_EPOCHS):
             )
 
             with torch.no_grad():
-                fake = gen(audio)
+                fake, mu, logvar = gen(audio)
                 # take out (up to) 32 examples
                 img_grid_real = make_grid(mnist[:32], normalize=True)
                 img_grid_fake = make_grid(fake[:32], normalize=True)
