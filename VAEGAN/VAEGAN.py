@@ -45,9 +45,9 @@ class Generator(nn.Module):
         )
         
         self.fc1 = nn.Linear(features_g * 8, features_g * 4)
-        self.fc2 = nn.Linear(features_g * 4, 10)
-        self.fc3 = nn.Linear(features_g * 4, 10)
-        self.fc4 = nn.Linear(10, features_g * 4)
+        self.fc2 = nn.Linear(features_g * 4, 1024)
+        self.fc3 = nn.Linear(features_g * 4, 1024)
+        self.fc4 = nn.Linear(1024, features_g * 4)
         self.fc5 = nn.Linear(features_g * 4, features_g * 8)
 
         # UpLayers
@@ -56,7 +56,7 @@ class Generator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             self._upsample(features_g * 4, features_g * 2, 2, 2, 1),
             self._upsample(features_g * 2, features_g, 2, 2, 1),
-            nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it  to bring out 28x28 image)
+            nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it to bring out 28x28 image)
         )
 
         self.relu = nn.ReLU()
@@ -73,7 +73,7 @@ class Generator(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),  
+            nn.LeakyReLU(0.2),  
         )
     
     def _upsample(self, in_channels, out_channels, kernel_size, stride, padding):
@@ -87,7 +87,7 @@ class Generator(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),  
+            nn.LeakyReLU(0.2),  
         )
 
     def reparameterize(self, mu, logvar):
@@ -129,7 +129,7 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-    return BCE + KLD, BCE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
+    return DISCBCE + BCE + KLD, DISCBCE, BCE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
 
 # Ahaha testing
 # def test():

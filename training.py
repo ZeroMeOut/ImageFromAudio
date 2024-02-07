@@ -11,10 +11,9 @@ from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
-BATCH_SIZE = 128
-IMAGE_SIZE = 64
+BATCH_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 100
+NUM_EPOCHS = 150
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
@@ -30,7 +29,7 @@ mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform)
 fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform)
 
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE, shuffle=True)
+loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 disc = Discriminator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
@@ -65,7 +64,7 @@ for epoch in range(NUM_EPOCHS):
 
         ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
         output = disc(fake).reshape(-1)
-        loss_gen, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
+        loss_gen, discbce, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
         gen.zero_grad()
         loss_gen.backward()
         opt_gen.step()
@@ -74,7 +73,7 @@ for epoch in range(NUM_EPOCHS):
         if batch_idx % 100 == 0:
             print(
                 f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}"
+                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
             with torch.no_grad():
