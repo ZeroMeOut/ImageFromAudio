@@ -3,14 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d):
+    def __init__(self, channels_img):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(channels_img, features_d, 2, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            self._block(features_d, features_d * 2, 2, 2, 1),
-            self._block(features_d * 2, features_d * 4, 2, 2, 1),
-            nn.Conv2d(features_d * 4, features_d * 8, 4, 2, 0, bias=False),
+            self._block(channels_img, 128, 4, 2, 1),
+            self._block(128, 256, 4, 2, 1),
+            self._block(256, 512, 4, 2, 1),
+            self._block(512, 1, 1, 1, 1),
             nn.Sigmoid()
         )
 
@@ -32,6 +31,7 @@ class Discriminator(nn.Module):
         return self.main(x)
 
 class Generator(nn.Module):
+
     
     def __init__(self, channels_img, features_g):
         super(Generator, self).__init__()
@@ -57,12 +57,13 @@ class Generator(nn.Module):
             self._upsample(features_g * 4, features_g * 2, 2, 2, 1),
             self._upsample(features_g * 2, features_g, 2, 2, 1),
             nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it to bring out 28x28 image)
+
         )
 
         self.relu = nn.ReLU()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def _downsample(self, in_channels, out_channels, kernel_size, stride, padding):
+    def _downsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
         return nn.Sequential(
             nn.Conv2d(
                 in_channels,
@@ -76,7 +77,7 @@ class Generator(nn.Module):
             nn.LeakyReLU(0.2),  
         )
     
-    def _upsample(self, in_channels, out_channels, kernel_size, stride, padding):
+    def _upsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
         return nn.Sequential(
             nn.ConvTranspose2d(
                 in_channels,
@@ -110,9 +111,11 @@ class Generator(nn.Module):
     def forward(self, x):
         # Encode
         h = self.down(x)
+
         mu, logvar, z = self.bottelneck(h)
         z = self.up(z)
         return z, mu, logvar
+
 
 def initialize_weights(model):
     for m in model.modules():
@@ -133,8 +136,9 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 
 # Ahaha testing
 # def test():
-#     gen = Generator(1, 64)
+#     gen = Generator(1)
 #     disc = Discriminator(1, 64)
+
 #     x = torch.randn(32, 1, 28, 28)
 #     y = torch.randn(32, 1, 28, 28)
 #     z, mu, logvar = gen(x)
@@ -142,6 +146,7 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 #     # print("disc output shape: ", disc(gen(x)).shape)
 #     loss, bce, kld = loss_fn(z, y, mu, logvar)
 #     print(loss, bce, kld)
+
 
 # if __name__ == "__main__":
 #     test()

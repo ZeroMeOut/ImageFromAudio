@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn as nn 
 import torch.optim as optim
@@ -10,27 +11,36 @@ from VAEGAN.VAEGAN import Discriminator, Generator, initialize_weights, loss_fn
 from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
-BATCH_SIZE = 64
+LEARNING_RATE = 3e-4  # Karpathy constant
+BATCH_SIZE = 128
 CHANNELS_IMG = 1
-NUM_EPOCHS = 150
+NUM_EPOCHS = 20
+
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
 fsdd_path = 'MFD/FSDD'
 
-transform = transforms.Compose([
+transform_mnist = transforms.Compose([
     transforms.Grayscale(),  # Convert to grayscale
     transforms.ToTensor(),   # Convert to tensor
     transforms.Resize(size=(28,28), antialias=True)
 ])
 
-mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform)
-fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform)
+transform_fsdd = transforms.Compose([
+    transforms.Grayscale(),  # Convert to grayscale
+    transforms.ToTensor(),   # Convert to tensor
+    transforms.Resize(size=(48,48), antialias=True)
+])
+
+mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform_mnist)
+fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform_fsdd)
 
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
 loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
+
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
+
 disc = Discriminator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
 initialize_weights(disc)
@@ -38,6 +48,7 @@ initialize_weights(disc)
 opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE, betas=(0.0, 0.9))
 opt_disc = optim.Adam(disc.parameters(), lr=LEARNING_RATE, betas=(0.0, 0.9))
 criterion = nn.BCELoss()
+criterion2 = nn.BCELoss(reduction='sum')
 
 writer_real = SummaryWriter(f"logs/real")
 writer_fake = SummaryWriter(f"logs/fake")
@@ -50,7 +61,9 @@ for epoch in range(NUM_EPOCHS):
     for batch_idx, batch in enumerate(loader):
         mnist = batch['image1'].to(device)
         audio = batch['image2'].to(device)
+
         fake, mu, logvar = gen(audio)
+
 
         disc_mnist = disc(mnist).reshape(-1).to(device)
         loss_disc_mnist = criterion(disc_mnist, torch.ones_like(disc_mnist).to(device))
@@ -64,7 +77,9 @@ for epoch in range(NUM_EPOCHS):
 
         ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
         output = disc(fake).reshape(-1)
+
         loss_gen, discbce, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
+
         gen.zero_grad()
         loss_gen.backward()
         opt_gen.step()
@@ -77,7 +92,9 @@ for epoch in range(NUM_EPOCHS):
             )
 
             with torch.no_grad():
+
                 fake, mu, logvar = gen(audio)
+
                 # take out (up to) 32 examples
                 img_grid_real = make_grid(mnist[:32], normalize=True)
                 img_grid_fake = make_grid(fake[:32], normalize=True)
@@ -86,5 +103,3 @@ for epoch in range(NUM_EPOCHS):
                 writer_fake.add_image("Fake", img_grid_fake, global_step=step)
 
             step += 1
-
-
