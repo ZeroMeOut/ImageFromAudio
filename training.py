@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 1e-4
 BATCH_SIZE = 64
 IMAGE_SIZE = 64
-CHANNELS_IMG = 3
+CHANNELS_IMG = 1
 Z_DIM = 100
 NUM_EPOCHS = 5
 FEATURES_CRITIC = 64
@@ -31,8 +31,8 @@ transforms = transforms.Compose(
     ]
 )
 
-# dataset = datasets.MNIST(root="dataset/", train=True, transform=transforms, download=True)
-dataset = datasets.ImageFolder(root="dataset/", transform=transforms)
+dataset = datasets.MNIST(root="dataset/", train=True, transform=transforms, download=True)
+# dataset = datasets.ImageFolder(root="dataset/", transform=transforms)
 loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 gen = Generator(Z_DIM, CHANNELS_IMG, FEATURES_GEN).to(device)
 critic = Discriminator(CHANNELS_IMG, FEATURES_CRITIC).to(device)
