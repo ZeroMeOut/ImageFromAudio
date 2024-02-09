@@ -7,12 +7,12 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from torch.utils.tensorboard import SummaryWriter
-from VAEGAN.VAEGAN import Discriminator, Generator, initialize_weights, loss_fn
+from CVAE.CVAE import Generator, initialize_weights, loss_fn
 from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 CHANNELS_IMG = 1
 NUM_EPOCHS = 20
 
@@ -30,7 +30,7 @@ transform_mnist = transforms.Compose([
 transform_fsdd = transforms.Compose([
     transforms.Grayscale(),  # Convert to grayscale
     transforms.ToTensor(),   # Convert to tensor
-    transforms.Resize(size=(48,48), antialias=True)
+    transforms.Resize(size=(28,28), antialias=True)
 ])
 
 mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform_mnist)
@@ -40,13 +40,9 @@ paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
 loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
 
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
-
-disc = Discriminator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
-initialize_weights(disc)
 
-opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE, betas=(0.0, 0.9))
-opt_disc = optim.Adam(disc.parameters(), lr=LEARNING_RATE, betas=(0.0, 0.9))
+opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE)
 criterion = nn.BCELoss()
 criterion2 = nn.BCELoss(reduction='sum')
 
@@ -55,7 +51,6 @@ writer_fake = SummaryWriter(f"logs/fake")
 step = 0
 
 gen.train()
-disc.train()
 
 for epoch in range(NUM_EPOCHS):
     for batch_idx, batch in enumerate(loader):
@@ -64,21 +59,7 @@ for epoch in range(NUM_EPOCHS):
 
         fake, mu, logvar = gen(audio)
 
-
-        disc_mnist = disc(mnist).reshape(-1).to(device)
-        loss_disc_mnist = criterion(disc_mnist, torch.ones_like(disc_mnist).to(device))
-
-        disc_fake = disc(fake.detach()).reshape(-1)
-        loss_disc_fake = criterion(disc_fake, torch.zeros_like(disc_fake).to(device))
-        loss_disc = (loss_disc_mnist + loss_disc_fake) / 2
-        disc.zero_grad()
-        loss_disc.backward()
-        opt_disc.step()
-
-        ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
-        output = disc(fake).reshape(-1)
-
-        loss_gen, discbce, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
+        loss_gen, bce, kld = loss_fn(fake, mnist, mu, logvar)
 
         gen.zero_grad()
         loss_gen.backward()
@@ -88,7 +69,7 @@ for epoch in range(NUM_EPOCHS):
         if batch_idx % 100 == 0:
             print(
                 f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+                loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
             with torch.no_grad():
