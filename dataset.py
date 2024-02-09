@@ -28,8 +28,8 @@ class PairedDataset(Dataset):
     
     def __getitem__(self, index):
         image1, label1 = self.dataset1[index]
-        # image2, label2 = self.dataset2[index]
-        return label1
+        image2, label2 = self.dataset2[index]
+        return image1, image2
 
 def my_collate(batch):
     data = [item[0] for item in batch]
@@ -38,15 +38,20 @@ def my_collate(batch):
 
 # Create the paired dataset
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=1)
+loader = DataLoader(paired_dataset, batch_size=64, shuffle=True)
 
-v = 0
+# v = 0
+# epochs = 1
+# batch_size = 64
 
-for i, x in enumerate(loader):
-    v += 1
-print(v)
-
-   
+# for epoch in range(epochs):
+#     for batch_idx,(data, target) in enumerate(loader):
+#         l1 = data
+#         l2 = target[0]
+#         print(l1)
+#         break
+#     break
+        
 
 
 

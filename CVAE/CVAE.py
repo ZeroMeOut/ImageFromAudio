@@ -98,7 +98,7 @@ def loss_fn(recon_x, x, mu, logvar):
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-    return BCE + KLD, BCE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
+    return BCE + 0.0001*KLD, BCE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
 
 # Ahaha testing
 def test():

@@ -14,8 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
 BATCH_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 20
-
+NUM_EPOCHS = 200
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
@@ -37,7 +36,7 @@ mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform_mnist)
 fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform_fsdd)
 
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
+loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
@@ -53,13 +52,13 @@ step = 0
 gen.train()
 
 for epoch in range(NUM_EPOCHS):
-    for batch_idx, batch in enumerate(loader):
-        mnist = batch['image1'].to(device)
-        audio = batch['image2'].to(device)
+    for batch_idx, (target, data) in enumerate(loader):
+        target = target.to(device)
+        data = data.to(device)
 
-        fake, mu, logvar = gen(audio)
+        fake, mu, logvar = gen(data)
 
-        loss_gen, bce, kld = loss_fn(fake, mnist, mu, logvar)
+        loss_gen, bce, kld = loss_fn(fake, target, mu, logvar)
 
         gen.zero_grad()
         loss_gen.backward()
@@ -67,17 +66,22 @@ for epoch in range(NUM_EPOCHS):
 
         # Print losses occasionally and print to tensorboard
         if batch_idx % 100 == 0:
+            # print(
+            #     f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
+            #     loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+            # )
+
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
+                f"Epoch [{epoch}/{NUM_EPOCHS}] \
                 loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
             with torch.no_grad():
 
-                fake, mu, logvar = gen(audio)
+                fake, mu, logvar = gen(data)
 
                 # take out (up to) 32 examples
-                img_grid_real = make_grid(mnist[:32], normalize=True)
+                img_grid_real = make_grid(target[:32], normalize=True)
                 img_grid_fake = make_grid(fake[:32], normalize=True)
 
                 writer_real.add_image("Real", img_grid_real, global_step=step)
