@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 2e-4  # could also use two lrs, one for gen and one for disc
 BATCH_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 150
+NUM_EPOCHS = 300
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
@@ -29,7 +29,7 @@ mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform)
 fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform)
 
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
+loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE, shuffle=True)
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 disc = Discriminator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
@@ -47,9 +47,9 @@ gen.train()
 disc.train()
 
 for epoch in range(NUM_EPOCHS):
-    for batch_idx, batch in enumerate(loader):
-        mnist = batch['image1'].to(device)
-        audio = batch['image2'].to(device)
+    for batch_idx, (target, data) in enumerate(loader):
+        mnist = target.to(device)
+        audio = data.to(device)
         fake, mu, logvar = gen(audio)
 
         disc_mnist = disc(mnist).reshape(-1).to(device)
@@ -71,9 +71,14 @@ for epoch in range(NUM_EPOCHS):
 
         # Print losses occasionally and print to tensorboard
         if batch_idx % 100 == 0:
+            # print(
+            #     f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
+            #       Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+            # )
+
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+                f"Epoch [{epoch}/{NUM_EPOCHS}] \
+                Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
             with torch.no_grad():
