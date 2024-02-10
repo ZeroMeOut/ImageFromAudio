@@ -3,14 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d):
+    def __init__(self, channels_img):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(channels_img, features_d, 2, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            self._block(features_d, features_d * 2, 2, 2, 1),
-            self._block(features_d * 2, features_d * 4, 2, 2, 1),
-            nn.Conv2d(features_d * 4, features_d * 8, 4, 2, 0, bias=False),
+            self._block(channels_img, 128, 4, 2, 1),
+            self._block(128, 256, 4, 2, 1),
+            self._block(256, 512, 4, 2, 1),
+            self._block(512, 1, 1, 1, 1),
             nn.Sigmoid()
         )
 
@@ -110,7 +109,7 @@ class Generator(nn.Module):
         mu, logvar, z = self.bottelneck(h)
         z = self.up(z)
         return z, mu, logvar
-    
+
 def initialize_weights(model):
     for m in model.modules():
         if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.BatchNorm2d)):
@@ -130,8 +129,9 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 
 # Ahaha testing
 # def test():
-#     gen = Generator(1, 64)
+#     gen = Generator(1)
 #     disc = Discriminator(1, 64)
+
 #     x = torch.randn(32, 1, 28, 28)
 #     y = torch.randn(32, 1, 28, 28)
 #     z, mu, logvar = gen(x)
@@ -139,6 +139,7 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 #     # print("disc output shape: ", disc(gen(x)).shape)
 #     loss, bce, kld = loss_fn(z, y, mu, logvar)
 #     print(loss, bce, kld)
+
 
 # if __name__ == "__main__":
 #     test()
