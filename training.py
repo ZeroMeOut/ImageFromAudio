@@ -14,7 +14,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
 BATCH_SIZE = 128
 CHANNELS_IMG = 1
-NUM_EPOCHS = 20
+
+NUM_EPOCHS = 300
 
 FEATURES = 64
 
@@ -37,7 +38,8 @@ mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform_mnist)
 fsdd_dataset = datasets.ImageFolder(root=fsdd_path, transform=transform_fsdd)
 
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE)
+
+loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 
@@ -58,10 +60,10 @@ gen.train()
 disc.train()
 
 for epoch in range(NUM_EPOCHS):
-    for batch_idx, batch in enumerate(loader):
-        mnist = batch['image1'].to(device)
-        audio = batch['image2'].to(device)
 
+    for batch_idx, (target, data) in enumerate(loader):
+        mnist = target.to(device)
+        audio = data.to(device)
         fake, mu, logvar = gen(audio)
 
 
@@ -86,9 +88,14 @@ for epoch in range(NUM_EPOCHS):
 
         # Print losses occasionally and print to tensorboard
         if batch_idx % 100 == 0:
+            # print(
+            #     f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
+            #       Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+            # )
+
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+                f"Epoch [{epoch}/{NUM_EPOCHS}] \
+                Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
             with torch.no_grad():
