@@ -5,7 +5,6 @@ import torch.nn.functional as F
 
 class Generator(nn.Module):
 
-    
     def __init__(self, channels_img, features_g):
         super(Generator, self).__init__()
         # DownLayers
