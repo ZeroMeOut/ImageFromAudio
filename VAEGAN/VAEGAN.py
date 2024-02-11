@@ -10,7 +10,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             self._block(features_d, features_d * 2, 2, 2, 1),
             self._block(features_d * 2, features_d * 4, 2, 2, 1),
-            nn.Conv2d(features_d * 4, features_d * 8, 4, 2, 0, bias=False),
+            nn.Conv2d(features_d * 4, 1, 4, 2, 0, bias=False),
             nn.Sigmoid()
         )
 
