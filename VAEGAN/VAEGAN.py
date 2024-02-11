@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d):
+    def __init__(self, channels_img):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
+
             nn.Conv2d(channels_img + 1, features_d, 2, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             self._block(features_d, features_d * 2, 2, 2, 1),
@@ -110,7 +111,7 @@ class Generator(nn.Module):
         mu, logvar, z = self.bottelneck(h)
         z = self.up(z)
         return z, mu, logvar
-    
+
 def initialize_weights(model):
     for m in model.modules():
         if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.BatchNorm2d)):
@@ -141,6 +142,7 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 #     z, mu, logvar = gen(x, noise)
 #     print("gen output shape: ", z.shape, mu.shape, logvar.shape)
 #     print("disc output shape: ", disc(z, y).shape)
+
 
 # if __name__ == "__main__":
 #     test()
