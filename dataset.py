@@ -23,28 +23,35 @@ class PairedDataset(Dataset):
         self.dataset1 = dataset1
         self.dataset2 = dataset2
 
+    def __len__(self):
+        return  len(self.dataset2)
+    
     def __getitem__(self, index):
         image1, label1 = self.dataset1[index]
         image2, label2 = self.dataset2[index]
-        return {'labels': (label1), 'image1': image1, 'image2': image2}
+        return image1, image2
 
-    def __len__(self):
-        return min(len(self.dataset1), len(self.dataset2))
+def my_collate(batch):
+    data = [item[0] for item in batch]
+    target = [item[1] for item in batch]
+    return [data, target]
 
 # Create the paired dataset
 paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-# loader = DataLoader(paired_dataset, batch_size=1)
+loader = DataLoader(paired_dataset, batch_size=64, shuffle=True)
 
-# i = 0
-# for batch in loader:
-#     mnist, audio = batch['labels']
-#     print(mnist, audio)
+# v = 0
+# epochs = 1
+# batch_size = 64
 
-#     i += 1
-#     if i == 5:
+# for epoch in range(epochs):
+#     for batch_idx,(data, target) in enumerate(loader):
+#         l1 = data
+#         l2 = target[0]
+#         print(l1)
 #         break
-
-   
+#     break
+        
 
 
 
