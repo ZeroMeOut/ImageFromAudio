@@ -6,7 +6,7 @@ class Discriminator(nn.Module):
     def __init__(self, channels_img, features_d):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(channels_img, features_d, 2, 2, 1, bias=False),
+            nn.Conv2d(channels_img + 1, features_d, 2, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             self._block(features_d, features_d * 2, 2, 2, 1),
             self._block(features_d * 2, features_d * 4, 2, 2, 1),
@@ -28,33 +28,33 @@ class Discriminator(nn.Module):
             , nn.LeakyReLU(0.2)
         )
 
-    def forward(self, x):
+    def forward(self, input, other_input): # Lol
+        x = torch.cat([input, other_input], dim=1)
         return self.main(x)
 
 class Generator(nn.Module):
 
-    def __init__(self, channels_img, features_g):
+    def __init__(self, NOISE_DIM, channels_img, features_g, latent_dim):
         super(Generator, self).__init__()
         # DownLayers
         self.down = nn.Sequential(
-            nn.Conv2d(channels_img, features_g, 2, 2, 1, bias=False),
+            nn.Conv2d(channels_img + NOISE_DIM, features_g, 2, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             self._downsample(features_g, features_g * 2, 2, 2, 1),
             self._downsample(features_g * 2, features_g * 4, 2, 2, 1),
             nn.Conv2d(features_g * 4, features_g * 8, 4, 2, 0, bias=False),
         )
         
-        self.fc1 = nn.Linear(features_g * 8, 10)
-        self.fc2 = nn.Linear(features_g * 8, 10)
+        self.fc1 = nn.Linear(features_g * 8, latent_dim)
+        self.fc2 = nn.Linear(features_g * 8, latent_dim)
 
         # UpLayers
         self.up = nn.Sequential(
-            nn.ConvTranspose2d(10, features_g * 4, 4, 2, 0, bias=False),
+            nn.ConvTranspose2d(latent_dim, features_g * 4, 4, 2, 0, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             self._upsample(features_g * 4, features_g * 2, 2, 2, 1),
             self._upsample(features_g * 2, features_g, 2, 2, 1),
             nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it to bring out 28x28 image)
-
         )
 
         self.relu = nn.ReLU()
@@ -102,8 +102,9 @@ class Generator(nn.Module):
         z = z.view(z.shape[0], z.shape[1], 1, 1)
         return mu, logvar, z
     
-    def forward(self, x):
+    def forward(self, input, noise):
         # Encode
+        x = torch.cat([input, noise], dim=1)
         h = self.down(x)
 
         mu, logvar, z = self.bottelneck(h)
@@ -127,17 +128,19 @@ def loss_fn(recon_x, x, disc_x, mu, logvar):
 
     return DISCBCE + 1 * MSE + 0.001 * KLD, DISCBCE, MSE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
 
-# Ahaha testing
+# Ah ah testing
 # def test():
-#     gen = Generator(1, 64)
-#     disc = Discriminator(1, 64)
-#     x = torch.randn(32, 1, 28, 28)
-#     y = torch.randn(32, 1, 28, 28)
-#     z, mu, logvar = gen(x)
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     gen = Generator(100, 1, 64, 10).to(device)
+#     disc = Discriminator(1, 64).to(device)
+
+#     x = torch.randn(32, 1, 28, 28).to(device)
+#     y = torch.randn(32, 1, 28, 28).to(device)
+#     noise = torch.randn(32, 100, 28, 28).to(device)
+    
+#     z, mu, logvar = gen(x, noise)
 #     print("gen output shape: ", z.shape, mu.shape, logvar.shape)
-#     # print("disc output shape: ", disc(gen(x)).shape)
-#     loss, bce, kld = loss_fn(z, y, mu, logvar)
-#     print(loss, bce, kld)
+#     print("disc output shape: ", disc(z, y).shape)
 
 # if __name__ == "__main__":
 #     test()
