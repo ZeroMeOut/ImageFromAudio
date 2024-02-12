@@ -27,7 +27,6 @@ class Generator(nn.Module):
             self._upsample(features_g * 4, features_g * 2, 2, 2, 1),
             self._upsample(features_g * 2, features_g, 2, 2, 1),
             nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it to bring out 28x28 image)
-
         )
 
         self.relu = nn.ReLU()
