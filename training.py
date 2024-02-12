@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
 BATCH_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 200
+NUM_EPOCHS = 100
 FEATURES = 64
 
 mnist_path = 'MFD/MNIST'
@@ -62,14 +62,9 @@ for epoch in range(NUM_EPOCHS):
         opt_gen.step()
 
         # Print losses occasionally and print to tensorboard
-        if batch_idx % 100 == 0:
-            # print(
-            #     f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-            #     loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
-            # )
-
+        if  batch_idx % BATCH_SIZE == 0:
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] \
+                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
                 loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 

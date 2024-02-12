@@ -98,11 +98,11 @@ def loss_fn(recon_x, x, mu, logvar):
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-    return BCE + 0.0001*KLD, BCE, KLD # From this paper https://arxiv.org/pdf/2109.13354.pdf
+    return BCE + 0.0001*KLD, BCE, KLD # From this paper 
 
 # Ahaha testing
-def test():
-    gen = Generator(1, 64)
+# def test():
+#     gen = Generator(1, 64)
 
     # summary(gen, input_size=(32, 1, 28, 28))
     # initialize_weights(gen)
@@ -114,5 +114,5 @@ def test():
     # # print(loss, bce, kld)
 
 
-if __name__ == "__main__":
-    test()
+# if __name__ == "__main__":
+#     test()

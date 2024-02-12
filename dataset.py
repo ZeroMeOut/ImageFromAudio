@@ -37,8 +37,8 @@ def my_collate(batch):
     return [data, target]
 
 # Create the paired dataset
-paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
-loader = DataLoader(paired_dataset, batch_size=64, shuffle=True)
+# paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
+# loader = DataLoader(paired_dataset, batch_size=64, shuffle=True)
 
 # v = 0
 # epochs = 1
