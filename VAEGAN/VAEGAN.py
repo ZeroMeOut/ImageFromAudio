@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img):
+    def __init__(self, channels_img, features_d):
         super(Discriminator, self).__init__()
         self.main = nn.Sequential(
 
