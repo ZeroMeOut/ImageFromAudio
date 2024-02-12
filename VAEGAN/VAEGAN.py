@@ -72,7 +72,7 @@ class Generator(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),  
+            nn.LeakyReLU(0.2),  
         )
     
     def _upsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
@@ -86,7 +86,7 @@ class Generator(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),  
+            nn.LeakyReLU(0.2),  
         )
 
     def reparameterize(self, mu, logvar):
