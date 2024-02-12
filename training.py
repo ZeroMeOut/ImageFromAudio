@@ -42,8 +42,6 @@ gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
 
 opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE)
-criterion = nn.BCELoss()
-criterion2 = nn.BCELoss(reduction='sum')
 
 writer_real = SummaryWriter(f"logs/real")
 writer_fake = SummaryWriter(f"logs/fake")
@@ -57,7 +55,6 @@ for epoch in range(NUM_EPOCHS):
         data = data.to(device)
 
         fake, mu, logvar = gen(data)
-
         loss_gen, bce, kld = loss_fn(fake, target, mu, logvar)
 
         gen.zero_grad()
