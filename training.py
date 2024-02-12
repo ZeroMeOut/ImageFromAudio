@@ -33,7 +33,7 @@ transform_mnist = transforms.Compose([
 transform_fsdd = transforms.Compose([
     transforms.Grayscale(),  # Convert to grayscale
     transforms.ToTensor(),   # Convert to tensor
-    transforms.Resize(size=(48,48), antialias=True)
+    transforms.Resize(size=(28,28), antialias=True)
 ])
 
 mnist_dataset = datasets.ImageFolder(root=mnist_path, transform=transform_mnist)
@@ -66,7 +66,7 @@ for epoch in range(NUM_EPOCHS):
     for batch_idx, (target, data) in enumerate(loader):
         mnist = target.to(device)
         audio = data.to(device)
-        noise = torch.randn(audio.shape[0], 100, 28, 28).to(device)
+        noise = torch.randn(audio.shape[0], NOISE_DIM, 28, 28).to(device)
         fake, mu, logvar = gen(noise, audio)
 
 
