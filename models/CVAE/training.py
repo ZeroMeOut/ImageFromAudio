@@ -7,18 +7,18 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from torch.utils.tensorboard import SummaryWriter
-from CVAE.CVAE import Generator, initialize_weights, loss_fn
+from CVAE import Generator, initialize_weights, loss_fn
 from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
 BATCH_SIZE = 64
 CHANNELS_IMG = 1
-NUM_EPOCHS = 200
+NUM_EPOCHS = 100
 FEATURES = 64
 
-mnist_path = 'MFD/MNIST'
-fsdd_path = 'MFD/FSDD'
+mnist_path = '../../MFD/MNIST'
+fsdd_path = '../../MFD/FSDD'
 
 transform_mnist = transforms.Compose([
     transforms.Grayscale(),  # Convert to grayscale
@@ -42,8 +42,6 @@ gen = Generator(CHANNELS_IMG, FEATURES).to(device)
 initialize_weights(gen)
 
 opt_gen = optim.Adam(gen.parameters(), lr=LEARNING_RATE)
-criterion = nn.BCELoss()
-criterion2 = nn.BCELoss(reduction='sum')
 
 writer_real = SummaryWriter(f"logs/real")
 writer_fake = SummaryWriter(f"logs/fake")
@@ -57,7 +55,6 @@ for epoch in range(NUM_EPOCHS):
         data = data.to(device)
 
         fake, mu, logvar = gen(data)
-
         loss_gen, bce, kld = loss_fn(fake, target, mu, logvar)
 
         gen.zero_grad()
@@ -65,14 +62,9 @@ for epoch in range(NUM_EPOCHS):
         opt_gen.step()
 
         # Print losses occasionally and print to tensorboard
-        if batch_idx % 100 == 0:
-            # print(
-            #     f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-            #     loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
-            # )
-
+        if  batch_idx % BATCH_SIZE == 0:
             print(
-                f"Epoch [{epoch}/{NUM_EPOCHS}] \
+                f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
                 loss G: {loss_gen:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
             )
 
