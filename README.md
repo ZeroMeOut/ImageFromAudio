@@ -13,4 +13,4 @@ Recently I have been interested in audio-to-image generation. That is using the 
 I know I am supposed to show some charts for the loss, I will probably do that later (or you can help me with that :)).
 
 ## Thoughts
-It seems to struggle to reconstruct the image after a certain point. I honestly don't know if it's because of the loss function I use, the learning rate, the one-to-one pairing for making the dataset, or some other thing I can't think of. But I will figure it out eventually, this was just an attempt after all. Feel free to yoink it and do whatever :) orrr help figure it out idk just a thought. 
+It seems to struggle to reconstruct the image after a certain point. I honestly don't know if it's because of the loss function I used, the learning rate, the one-to-one pairing for making the dataset, or some other thing I can't think of. But I will figure it out eventually, this was just an attempt after all. Feel free to yoink it and do whatever :) orrr help figure it out idk just a thought. 
