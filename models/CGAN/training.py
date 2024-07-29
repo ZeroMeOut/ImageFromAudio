@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from torch.utils.tensorboard import SummaryWriter
-from VAEGAN import Discriminator, Generator, initialize_weights, loss_fn
+from CGAN import Discriminator, Generator, initialize_weights, generator_loss
 from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -18,8 +18,6 @@ CHANNELS_IMG = 1
 NUM_EPOCHS = 100
 
 FEATURES = 64
-NOISE_DIM = 100
-LATENT_SPACE = 10
 
 mnist_path = '../../MFD/MNIST'
 fsdd_path = '../../MFD/FSDD'
@@ -43,7 +41,7 @@ paired_dataset = PairedDataset(mnist_dataset, fsdd_dataset)
 
 loader = DataLoader(paired_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-gen = Generator(NOISE_DIM, CHANNELS_IMG, FEATURES, LATENT_SPACE).to(device)
+gen = Generator(CHANNELS_IMG).to(device)
 disc = Discriminator(CHANNELS_IMG, FEATURES).to(device)
 
 initialize_weights(gen)
@@ -65,9 +63,7 @@ for epoch in range(NUM_EPOCHS):
     for batch_idx, (target, data) in enumerate(loader):
         mnist = target.to(device)
         audio = data.to(device)
-        noise = torch.randn(audio.shape[0], NOISE_DIM, 28, 28).to(device)
-        fake, mu, logvar = gen(noise, audio)
-
+        fake = gen(audio)
 
         disc_mnist = disc(mnist, audio).reshape(-1).to(device)
         loss_disc_mnist = criterion(disc_mnist, torch.ones_like(disc_mnist).to(device))
@@ -79,9 +75,9 @@ for epoch in range(NUM_EPOCHS):
         loss_disc.backward()
         opt_disc.step()
 
-        ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z)), combined with the CVAE loss
+        ### Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))
         output = disc(fake, audio).reshape(-1)
-        loss_gen, discbce, bce, kld = loss_fn(fake, mnist, output, mu, logvar)
+        loss_gen = generator_loss(fake, mnist, output)
 
         gen.zero_grad()
         loss_gen.backward()
@@ -91,11 +87,11 @@ for epoch in range(NUM_EPOCHS):
         if batch_idx % BATCH_SIZE == 0:
             print(
                 f"Epoch [{epoch}/{NUM_EPOCHS}] Batch {batch_idx}/{len(loader)} \
-                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}, D_BCE: {discbce:.4f}, BCE: {bce:.4f}, KLD: {kld:.4f}"
+                  Loss D: {loss_disc:.4f}, loss G: {loss_gen:.4f}"
             )
 
             with torch.no_grad():
-                fake, mu, logvar = gen(noise, audio)
+                fake = gen(audio)
                 # take out (up to) 32 examples
                 img_grid_real = make_grid(mnist[:32], normalize=True)
                 img_grid_fake = make_grid(fake[:32], normalize=True)

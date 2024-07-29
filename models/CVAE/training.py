@@ -12,7 +12,7 @@ from dataset import PairedDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 3e-4  # Karpathy constant
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 CHANNELS_IMG = 1
 NUM_EPOCHS = 100
 FEATURES = 64

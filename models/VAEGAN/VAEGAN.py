@@ -57,7 +57,6 @@ class Generator(nn.Module):
             nn.ConvTranspose2d(features_g, channels_img, 1, 3, 0, bias=False), # I know this is weird but it works ( I calculated it to bring out 28x28 image)
         )
 
-        self.relu = nn.ReLU()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _downsample(self, in_channels, out_channels, kernel_size, stride, padding=0):
