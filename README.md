@@ -19,5 +19,6 @@ I know I am supposed to show some charts for the loss, but I will probably do th
 
 ## Thoughts
 It seems to struggle to reconstruct the image after a certain point. I honestly don't know if it's because of the loss function I used, the learning rate, the one-to-one pairing for making the dataset, or some other thing I can't think of. But I will figure it out eventually, this was just an attempt after all. Feel free to yoink it and do whatever :) orrr help figure it out idk just a thought. 
-*5 months later edit:
+
+## 5 months later edit:
 Hello there, I finally came back to this because every time I opened the repo it bothered me a bit lol. I used CGAN as you can see above and it blows the other two out of the water, which was pretty exciting to see in real time when I was training. The paper and GitHub that I totally didn't collect from are in the comments just at the top of the CGAN.py file in the models' folder. Till next time :3
